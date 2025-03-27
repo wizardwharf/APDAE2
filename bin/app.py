@@ -1,5 +1,5 @@
-from flask import Flask, render_template, request
-from linear_regression import load_model, get_prediction, data, train_model, pickle_model
+from flask import Flask, render_template, request, jsonify
+from linear_regression import load_model, data, train_model, pickle_model
 import numpy as np
 
 Model_File = 'results/model.pkl'
@@ -9,6 +9,9 @@ pickle_model(model, Model_File)
 
 app = Flask(__name__)
 
+@app.route('/')
+def home():
+    return render_template('index.html')
 @app.route('/predict', methods=['POST'])
 def predict():
     input_data = request.get_json()
