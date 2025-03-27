@@ -4,8 +4,10 @@ import numpy as np
 
 Model_File = 'results/model.pkl'
 
-model = train_model()
-pickle_model(model, Model_File)
+#model = train_model()
+#pickle_model(model, Model_File)
+model = None
+
 
 app = Flask(__name__)
 
