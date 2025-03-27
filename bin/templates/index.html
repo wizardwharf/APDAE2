@@ -53,11 +53,12 @@ async def predict():
 
     # Use PyScript's pyfetch to call the backend predict endpoint
     response = await pyfetch(
-        url="http://localhost:5000/predict",
-        method="POST",
-        body=json.dumps({"features": features}),
-        headers={"Content-Type": "application/json"}
-    )
+    url="/predict",
+    method="POST",
+    body=json.dumps({"features": features}),
+    headers={"Content-Type": "application/json"}
+)
+
     data = await response.json()
 
     if "error" in data:
