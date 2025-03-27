@@ -1,19 +1,17 @@
 from flask import Flask, render_template, request, jsonify
-from linear_regression import load_model, data, train_model, pickle_model, get_regression_params
+from linear_regression import load_model, data, get_regression_params
 import numpy as np
 
 Model_File = 'results/model.pkl'
 
-model = train_model()
-pickle_model(model, Model_File)
-
-
+model = load_model(Model_File)
 
 app = Flask(__name__)
 
 @app.route('/')
 def home():
     return render_template('index.html')
+
 @app.route('/predict', methods=['POST'])
 def predict():
     input_data = request.get_json()
@@ -31,7 +29,7 @@ def predict():
 @app.route('/regression-line', methods=['GET'])
 def regression_line():
     params = get_regression_params(model)
-    return jsonify([params])
+    return jsonify(params)
 
 @app.route('/dataset', methods=['GET'])
 def dataset():
