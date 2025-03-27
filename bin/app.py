@@ -5,7 +5,7 @@ import numpy as np
 Model_File = 'results/model.pkl'
 
 model = train_model()
-picke_model(model, Model_File)
+pickle_model(model, Model_File)
 
 app = Flask(__name__)
 
