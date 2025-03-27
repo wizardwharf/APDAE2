@@ -29,6 +29,7 @@ def predict():
 @app.route('/regression-line', methods=['GET'])
 def regression_line():
     params = get_regression_params(model)
+    params['coefficients'] = params['coefficients'].tolist()
     return jsonify(params)
 
 @app.route('/dataset', methods=['GET'])
