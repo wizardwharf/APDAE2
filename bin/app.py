@@ -14,6 +14,7 @@ def home():
     return render_template('index.html')
 @app.route('/predict', methods=['POST'])
 def predict():
+    print('predict endpoint hit')
     input_data = request.get_json()
     if not input_data or 'features' not in input_data:
         return jsonify({'error':'no features provided'}), 400
