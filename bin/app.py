@@ -9,6 +9,10 @@ pickle_model(model, Model_File)
 
 app = Flask(__name__)
 
+@app.route('/test', methods=['GET'])
+def test():
+    print('test endpoint reached')
+    return jsonify({'message': 'helloo'})
 @app.route('/')
 def home():
     return render_template('index.html')
