@@ -74,7 +74,6 @@
       <label>Blood Sugar (standardized):
         <input type="number" step="any" name="sugar" required>
       </label>
-
       <button type="submit">Predict</button>
     </form>
 
@@ -86,7 +85,7 @@
   </div>
 
   <script>
-    // 1. Handle form submission to call /predict endpoint
+    // Handle form submission to call /predict endpoint
     document.getElementById('prediction-form').addEventListener('submit', async function(e) {
       e.preventDefault();  // Prevent default form submission (page reload)
 
@@ -122,23 +121,41 @@
       }
     });
 
-    // 2. Fetch dataset from /dataset endpoint and plot using Chart.js
-    async function fetchAndPlotDataset() {
+    // Function to fetch dataset and regression parameters, then plot with Chart.js
+    async function fetchAndPlotData() {
       try {
-        const response = await fetch('/dataset');
-        const jsonData = await response.json();
-        // Expecting something like { "dataset": [ { "features": [...], "target": ..., "prediction": ... }, ... ] }
-        const dataset = jsonData.dataset;
+        // Fetch dataset from /dataset endpoint
+        const datasetResponse = await fetch('/dataset');
+        const datasetJson = await datasetResponse.json();
+        // The backend returns { features: [...], target: [...] }
+        const featuresArray = datasetJson.features; // array of feature arrays
+        const targetsArray = datasetJson.target;      // array of target numbers
 
-        // We'll plot BMI (feature index 2) vs. the target value
-        const actualPoints = dataset.map(item => ({
-          x: item.features[2],
-          y: item.target
+        // Build scatter plot data using BMI (assumed to be at index 2)
+        const actualPoints = featuresArray.map((features, i) => ({
+          x: features[2],
+          y: targetsArray[i]
         }));
-        const predictedPoints = dataset.map(item => ({
-          x: item.features[2],
-          y: item.prediction
-        }));
+
+        // Fetch regression parameters from /regression-line endpoint
+        const regResponse = await fetch('/regression-line');
+        const regParams = await regResponse.json();
+        // Expecting { intercept: value, coefficients: [ ... ] }
+        const intercept = regParams.intercept;
+        const bmiCoefficient = regParams.coefficients[2]; // assuming index 2 is for BMI
+
+        // Determine BMI range from dataset
+        const bmiValues = featuresArray.map(features => features[2]);
+        const minBMI = Math.min(...bmiValues);
+        const maxBMI = Math.max(...bmiValues);
+        const regressionLinePoints = [];
+        const numPoints = 50;
+        // Create a series of points along BMI
+        for (let i = 0; i < numPoints; i++) {
+          const bmiValue = minBMI + (i / (numPoints - 1)) * (maxBMI - minBMI);
+          const predictedValue = intercept + bmiCoefficient * bmiValue;
+          regressionLinePoints.push({ x: bmiValue, y: predictedValue });
+        }
 
         // Create a scatter plot with Chart.js
         const ctx = document.getElementById('scatterChart').getContext('2d');
@@ -147,14 +164,19 @@
           data: {
             datasets: [
               {
-                label: 'Actual',
+                label: 'Actual Data',
                 data: actualPoints,
-                backgroundColor: 'rgba(0, 0, 255, 0.6)'
+                backgroundColor: 'rgba(0, 0, 255, 0.6)',
+                pointRadius: 3
               },
               {
-                label: 'Predicted',
-                data: predictedPoints,
-                backgroundColor: 'rgba(255, 0, 0, 0.6)'
+                label: 'Regression Line',
+                data: regressionLinePoints,
+                type: 'line',
+                fill: false,
+                borderColor: 'rgba(255, 0, 0, 0.8)',
+                borderWidth: 2,
+                pointRadius: 0
               }
             ]
           },
@@ -172,12 +194,12 @@
           }
         });
       } catch (err) {
-        console.error("Error fetching dataset:", err);
+        console.error("Error fetching data for chart:", err);
       }
     }
 
-    // Run the fetchAndPlotDataset function when the page loads
-    window.onload = fetchAndPlotDataset;
+    // Run the data fetch and plot function when the page loads
+    window.onload = fetchAndPlotData;
   </script>
 </body>
 </html>
