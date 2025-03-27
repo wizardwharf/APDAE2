@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Diabetes Prediction with PyScript</title>
+  <!-- PyScript styles and script -->
+  <link rel="stylesheet" href="https://pyscript.net/latest/pyscript.css" />
+  <script defer src="https://pyscript.net/latest/pyscript.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    input { margin: 5px; padding: 5px; }
+    button { padding: 5px 10px; margin: 10px 0; }
+    #result { font-weight: bold; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h1>Diabetes Prediction (Using PyScript)</h1>
+  <div id="form">
+    <!-- Input fields for features -->
+    <label>Age (standardized): <input id="age" type="number" step="any"></label><br>
+    <label>Sex (standardized): <input id="sex" type="number" step="any"></label><br>
+    <label>BMI (standardized): <input id="bmi" type="number" step="any"></label><br>
+    <label>Blood Pressure (standardized): <input id="bp" type="number" step="any"></label><br>
+    <label>Total Cholesterol (standardized): <input id="tc" type="number" step="any"></label><br>
+    <label>LDL (standardized): <input id="ldl" type="number" step="any"></label><br>
+    <label>HDL (standardized): <input id="hdl" type="number" step="any"></label><br>
+    <label>Cholesterol/HDL Ratio (standardized): <input id="chol_hdl" type="number" step="any"></label><br>
+    <label>Log Triglycerides (optional): <input id="log_triglycerides" type="number" step="any"></label><br>
+    <label>Blood Sugar (standardized): <input id="sugar" type="number" step="any"></label><br>
+    <button id="predict-btn">Predict</button>
+  </div>
+  <div id="result"></div>
+
+  <!-- PyScript to handle the form submission -->
+  <py-script>
+import json
+from pyscript import Element, pyfetch
+
+async def predict():
+    # Collect input values
+    features = [
+        float(Element("age").element.value or 0),
+        float(Element("sex").element.value or 0),
+        float(Element("bmi").element.value or 0),
+        float(Element("bp").element.value or 0),
+        float(Element("tc").element.value or 0),
+        float(Element("ldl").element.value or 0),
+        float(Element("hdl").element.value or 0),
+        float(Element("chol_hdl").element.value or 0),
+        float(Element("log_triglycerides").element.value or 0),
+        float(Element("sugar").element.value or 0)
+    ]
+
+    # Use PyScript's pyfetch to call the backend predict endpoint
+    response = await pyfetch(
+        url="http://localhost:5000/predict",
+        method="POST",
+        body=json.dumps({"features": features}),
+        headers={"Content-Type": "application/json"}
+    )
+    data = await response.json()
+
+    if "error" in data:
+        Element("result").write("Error: " + str(data["error"]))
+    else:
+        Element("result").write("Prediction: " + str(data["prediction"]))
+
+# Bind the predict function to the button click
+Element("predict-btn").element.onclick = lambda event: predict()
+  </py-script>
+</body>
+</html>
