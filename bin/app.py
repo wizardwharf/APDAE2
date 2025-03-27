@@ -1,26 +1,21 @@
 from flask import Flask, render_template, request, jsonify
-from linear_regression import load_model, data, train_model, pickle_model
+from linear_regression import load_model, data, train_model, pickle_model, get_regression_params
 import numpy as np
 
 Model_File = 'results/model.pkl'
 
-#model = train_model()
-#pickle_model(model, Model_File)
-model = None
+model = train_model()
+pickle_model(model, Model_File)
+
 
 
 app = Flask(__name__)
 
-@app.route('/test', methods=['GET'])
-def test():
-    print('test endpoint reached')
-    return jsonify({'message': 'helloo'})
 @app.route('/')
 def home():
     return render_template('index.html')
 @app.route('/predict', methods=['POST'])
 def predict():
-    print('predict endpoint hit')
     input_data = request.get_json()
     if not input_data or 'features' not in input_data:
         return jsonify({'error':'no features provided'}), 400
@@ -29,8 +24,8 @@ def predict():
     if not isinstance(features, list) or len(features) != 10:
         return jsonify({'error':'Features should be a list of ten numbers'}), 400
 
-    feautures_array = np.array(features).reshape(1,-1)
-    prediction = model.predict(feautures_array)
+    features_array = np.array(features).reshape(1,-1)
+    prediction = model.predict(features_array)
     return jsonify({'prediction': prediction[0]})
 
 @app.route('/regression-line', methods=['GET'])
