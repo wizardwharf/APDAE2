@@ -2,72 +2,182 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Diabetes Prediction with PyScript</title>
-  <!-- PyScript styles and script -->
-  <link rel="stylesheet" href="https://pyscript.net/latest/pyscript.css" />
-  <script defer src="https://pyscript.net/latest/pyscript.js"></script>
+  <title>Diabetes Prediction (HTML/JS Frontend)</title>
+  <!-- Load Chart.js from a CDN for the scatter plot -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    input { margin: 5px; padding: 5px; }
-    button { padding: 5px 10px; margin: 10px 0; }
-    #result { font-weight: bold; margin-top: 10px; }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    .container {
+      max-width: 800px;
+      margin: auto;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+    }
+    input {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+    }
+    button {
+      margin-top: 15px;
+      padding: 10px 15px;
+    }
+    #result {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+    canvas {
+      margin-top: 20px;
+    }
   </style>
 </head>
 <body>
-  <h1>Diabetes Prediction (Using PyScript)</h1>
-  <div id="form">
-    <!-- Input fields for features -->
-    <label>Age (standardized): <input id="age" type="number" step="any"></label><br>
-    <label>Sex (standardized): <input id="sex" type="number" step="any"></label><br>
-    <label>BMI (standardized): <input id="bmi" type="number" step="any"></label><br>
-    <label>Blood Pressure (standardized): <input id="bp" type="number" step="any"></label><br>
-    <label>Total Cholesterol (standardized): <input id="tc" type="number" step="any"></label><br>
-    <label>LDL (standardized): <input id="ldl" type="number" step="any"></label><br>
-    <label>HDL (standardized): <input id="hdl" type="number" step="any"></label><br>
-    <label>Cholesterol/HDL Ratio (standardized): <input id="chol_hdl" type="number" step="any"></label><br>
-    <label>Log Triglycerides (optional): <input id="log_triglycerides" type="number" step="any"></label><br>
-    <label>Blood Sugar (standardized): <input id="sugar" type="number" step="any"></label><br>
-    <button id="predict-btn">Predict</button>
+  <div class="container">
+    <h1>Diabetes Prediction</h1>
+
+    <!-- Form for user input -->
+    <form id="prediction-form">
+      <h2>Enter Measurements</h2>
+      <!-- 10 standardized features -->
+      <label>Age (standardized):
+        <input type="number" step="any" name="age" required>
+      </label>
+      <label>Sex (standardized):
+        <input type="number" step="any" name="sex" required>
+      </label>
+      <label>BMI (standardized):
+        <input type="number" step="any" name="bmi" required>
+      </label>
+      <label>Blood Pressure (standardized):
+        <input type="number" step="any" name="bp" required>
+      </label>
+      <label>Total Serum Cholesterol (standardized):
+        <input type="number" step="any" name="tc" required>
+      </label>
+      <label>Low-Density Lipoproteins (standardized):
+        <input type="number" step="any" name="ldl" required>
+      </label>
+      <label>High-Density Lipoproteins (standardized):
+        <input type="number" step="any" name="hdl" required>
+      </label>
+      <label>Total Cholesterol/HDL Ratio (standardized):
+        <input type="number" step="any" name="chol_hdl" required>
+      </label>
+      <label>Log of Serum Triglycerides (optional):
+        <input type="number" step="any" name="log_triglycerides">
+      </label>
+      <label>Blood Sugar (standardized):
+        <input type="number" step="any" name="sugar" required>
+      </label>
+
+      <button type="submit">Predict</button>
+    </form>
+
+    <!-- Display the prediction result -->
+    <div id="result"></div>
+
+    <h2>Scatter Plot: BMI vs. Diabetes Progression</h2>
+    <canvas id="scatterChart" width="600" height="400"></canvas>
   </div>
-  <div id="result"></div>
 
-  <!-- PyScript to handle the form submission -->
-  <py-script>
-import json
-from pyscript import Element, pyfetch
+  <script>
+    // 1. Handle form submission to call /predict endpoint
+    document.getElementById('prediction-form').addEventListener('submit', async function(e) {
+      e.preventDefault();  // Prevent default form submission (page reload)
 
-async def predict():
-    # Collect input values
-    features = [
-        float(Element("age").element.value or 0),
-        float(Element("sex").element.value or 0),
-        float(Element("bmi").element.value or 0),
-        float(Element("bp").element.value or 0),
-        float(Element("tc").element.value or 0),
-        float(Element("ldl").element.value or 0),
-        float(Element("hdl").element.value or 0),
-        float(Element("chol_hdl").element.value or 0),
-        float(Element("log_triglycerides").element.value or 0),
-        float(Element("sugar").element.value or 0)
-    ]
+      const formData = new FormData(this);
+      // Build an array of 10 features in the same order the backend expects
+      const features = [
+        parseFloat(formData.get('age')),
+        parseFloat(formData.get('sex')),
+        parseFloat(formData.get('bmi')),
+        parseFloat(formData.get('bp')),
+        parseFloat(formData.get('tc')),
+        parseFloat(formData.get('ldl')),
+        parseFloat(formData.get('hdl')),
+        parseFloat(formData.get('chol_hdl')),
+        parseFloat(formData.get('log_triglycerides')) || 0.0, // default to 0.0 if empty
+        parseFloat(formData.get('sugar'))
+      ];
 
-    # Use PyScript's pyfetch to call the backend predict endpoint
-    response = await pyfetch(
-    url="/predict",
-    method="POST",
-    body=json.dumps({"features": features}),
-    headers={"Content-Type": "application/json"}
-)
+      try {
+        const response = await fetch('/predict', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ features })
+        });
+        const data = await response.json();
+        if (data.error) {
+          document.getElementById('result').innerText = "Error: " + data.error;
+        } else {
+          document.getElementById('result').innerText = "Prediction: " + data.prediction.toFixed(2);
+        }
+      } catch (err) {
+        document.getElementById('result').innerText = "Error: " + err;
+      }
+    });
 
-    data = await response.json()
+    // 2. Fetch dataset from /dataset endpoint and plot using Chart.js
+    async function fetchAndPlotDataset() {
+      try {
+        const response = await fetch('/dataset');
+        const jsonData = await response.json();
+        // Expecting something like { "dataset": [ { "features": [...], "target": ..., "prediction": ... }, ... ] }
+        const dataset = jsonData.dataset;
 
-    if "error" in data:
-        Element("result").write("Error: " + str(data["error"]))
-    else:
-        Element("result").write("Prediction: " + str(data["prediction"]))
+        // We'll plot BMI (feature index 2) vs. the target value
+        const actualPoints = dataset.map(item => ({
+          x: item.features[2],
+          y: item.target
+        }));
+        const predictedPoints = dataset.map(item => ({
+          x: item.features[2],
+          y: item.prediction
+        }));
 
-# Bind the predict function to the button click
-Element("predict-btn").element.onclick = lambda event: predict()
-  </py-script>
+        // Create a scatter plot with Chart.js
+        const ctx = document.getElementById('scatterChart').getContext('2d');
+        new Chart(ctx, {
+          type: 'scatter',
+          data: {
+            datasets: [
+              {
+                label: 'Actual',
+                data: actualPoints,
+                backgroundColor: 'rgba(0, 0, 255, 0.6)'
+              },
+              {
+                label: 'Predicted',
+                data: predictedPoints,
+                backgroundColor: 'rgba(255, 0, 0, 0.6)'
+              }
+            ]
+          },
+          options: {
+            scales: {
+              x: {
+                type: 'linear',
+                position: 'bottom',
+                title: { display: true, text: 'BMI (standardized)' }
+              },
+              y: {
+                title: { display: true, text: 'Diabetes Progression' }
+              }
+            }
+          }
+        });
+      } catch (err) {
+        console.error("Error fetching dataset:", err);
+      }
+    }
+
+    // Run the fetchAndPlotDataset function when the page loads
+    window.onload = fetchAndPlotDataset;
+  </script>
 </body>
 </html>
