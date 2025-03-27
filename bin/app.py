@@ -22,7 +22,7 @@ def predict():
     if not isinstance(features, list) or len(features) != 10:
         return jsonify({'error':'Features should be a list of ten numbers'}), 400
 
-    features_array = np.array(features).reshape(1,-1)
+    features_array = np.array(features).reshape(1, -1)
     prediction = model.predict(features_array)
     return jsonify({'prediction': prediction[0]})
 
